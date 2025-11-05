@@ -33,29 +33,29 @@ const hcBase =
 const lmBase = "https://lm360.tldcrm.com/api/public/dialer/ready";
 
 const hcNumbers = [
-  { state: "MO", phone: "16602518046" },
-  { state: "AZ", phone: "15204064418" },
-  { state: "SC", phone: "18036650720" },
-  { state: "TX", phone: "14696615905" },
-  { state: "IN", phone: "15743033814" },
-  { state: "OH", phone: "14192036465" },
-  { state: "AL", phone: "12562956109" },
-  { state: "NE", phone: "15312191819" },
-  { state: "MS", phone: "16629139355" },
-  { state: "LA", phone: "13186088211" },
-  { state: "TN", phone: "16153880180" },
-  { state: "OK", phone: "15806705140" },
+  { state: "MO", phone: "16602510000" },
+  { state: "AZ", phone: "15204060000" },
+  { state: "SC", phone: "18036650000" },
+  { state: "TX", phone: "14696610000" },
+  { state: "IN", phone: "15743030000" },
+  { state: "OH", phone: "14192030000" },
+  { state: "AL", phone: "12562950000" },
+  { state: "NE", phone: "15312190000" },
+  { state: "MS", phone: "16629130000" },
+  { state: "LA", phone: "13186080000" },
+  { state: "TN", phone: "16153880000" },
+  { state: "OK", phone: "15806700000" },
 ];
 
 const lmNumbers = [
-  { state: "TX", phone: "12108606652" },
-  { state: "TN", phone: "18658983761" },
-  { state: "MS", phone: "16623367555" },
-  { state: "FL", phone: "13529421278" },
-  { state: "LA", phone: "12252262995" },
-  { state: "SC", phone: "18436245103" },
-  { state: "MI", phone: "13135766764" },
-  { state: "OK", phone: "15807402987" },
+  { state: "TX", phone: "12108600000" },
+  { state: "TN", phone: "18658980000" },
+  { state: "MS", phone: "16623360000" },
+  { state: "FL", phone: "13529420000" },
+  { state: "LA", phone: "12252260000" },
+  { state: "SC", phone: "18436240000" },
+  { state: "MI", phone: "13135760000" },
+  { state: "OK", phone: "15807400000" },
 ];
 
 // ============= API ROUTES =============
