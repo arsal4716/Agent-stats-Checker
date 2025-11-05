@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CRM Stats</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      padding: 30px;
+      color: #222;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      font-size: 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: #007bff;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #0069d9;
+    }
+
+    .btn-download {
+      background: #28a745;
+      color: #fff;
+    }
+    .btn-download:hover {
+      background: #218838;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: #222;
+      color: white;
+      text-transform: uppercase;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    tr:hover {
+      background: #f1f1f1;
+    }
+
+    #loader {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #eee;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>CRM Live Agent Status</h2>
+
+  <div style="text-align:center;">
+    <button class="btn btn-primary" id="refreshBtn" onclick="refreshData()">Refresh Data</button>
+    <button class="btn btn-download" onclick="downloadFile()">Download Excel</button>
+  </div>
+
+  <div id="loader">
+    <div class="spinner"></div>
+    <p>Fetching latest stats...</p>
+  </div>
+
+  <table id="statsTable">
+    <thead>
+      <tr>
+        <th>State</th>
+        <th>Phone</th>
+        <th>Ready</th>
+        <th>Active</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+function setLoading(state) {
+  document.getElementById("loader").style.display = state ? "block" : "none";
+  document.getElementById("refreshBtn").disabled = state;
+}
+
+function refreshData() {
+  setLoading(true);
+  fetch("/refresh")
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.querySelector("#statsTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.state}</td>
+            <td>${row.phone}</td>
+            <td>${row.ready}</td>
+            <td>${row.active}</td>
+          </tr>`;
+      });
+    })
+    .finally(() => setLoading(false));
+}
+
+function downloadFile() {
+  window.location.href = "/download";
+}
+</script>
+
+</body>
+</html>
