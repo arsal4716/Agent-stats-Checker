@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>CRM Stats - Health Connect</title>
+    <title>CRM Stats - Admin View</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -90,9 +90,14 @@
     </style>
   </head>
   <body>
-    <h2>CRM Live Agent Status - Health Connect</h2>
+<a href="/logout" class="btn" style="background:#dc3545;color:white">Logout</a>
+    <h2>CRM Live Agent Status - Admin Panel</h2>
 
     <div style="text-align: center; margin-bottom: 15px">
+      <select id="systemSelect" class="btn">
+        <option value="hc">Health Connect</option>
+        <option value="lm">Lead Market 360</option>
+      </select>
       <button class="btn btn-primary" id="refreshBtn" onclick="refreshData()">
         Refresh Data
       </button>
@@ -107,14 +112,7 @@
     </div>
 
     <table id="statsTable">
-      <thead>
-        <tr>
-          <th>State</th>
-          <th>Phone</th>
-          <th>Ready</th>
-          <th>Active</th>
-        </tr>
-      </thead>
+      <thead></thead>
       <tbody></tbody>
     </table>
 
@@ -126,30 +124,61 @@
         document.getElementById("refreshBtn").disabled = state;
       }
 
+      function buildTableHeader(type) {
+        const thead = document.querySelector("#statsTable thead");
+        if (type === "lm") {
+          thead.innerHTML = `
+      <tr>
+        <th>State</th>
+        <th>Phone</th>
+        <th>Ready</th>
+        <th>Active</th>
+        <th>Reason</th>
+        <th>Cause</th>
+      </tr>`;
+        } else {
+          thead.innerHTML = `
+      <tr>
+        <th>State</th>
+        <th>Phone</th>
+        <th>Ready</th>
+        <th>Active</th>
+      </tr>`;
+        }
+      }
+
       function refreshData() {
+        const type = document.getElementById("systemSelect").value;
         setLoading(true);
-        fetch(`/refresh?type=hc`)
+        buildTableHeader(type);
+
+        fetch(`/refresh?type=${type}`)
           .then((res) => res.json())
           .then((data) => {
             const tbody = document.querySelector("#statsTable tbody");
             tbody.innerHTML = "";
             data.forEach((row) => {
               tbody.innerHTML += `
-              <tr>
-                <td>${row.state}</td>
-                <td>${row.phone}</td>
-                <td>${row.ready}</td>
-                <td>${row.active}</td>
-              </tr>`;
+          <tr>
+            <td>${row.state}</td>
+            <td>${row.phone}</td>
+            <td>${row.ready}</td>
+            <td>${row.active}</td>
+            ${
+              row.reason !== undefined
+                ? `<td>${row.reason}</td><td>${row.cause}</td>`
+                : ""
+            }
+          </tr>`;
             });
           })
           .finally(() => setLoading(false));
       }
 
       function downloadFile() {
-        window.location.href = `/download?type=hc`;
+        const type = document.getElementById("systemSelect").value;
+        window.location.href = `/download?type=${type}`;
       }
-      refreshData();
     </script>
   </body>
 </html>

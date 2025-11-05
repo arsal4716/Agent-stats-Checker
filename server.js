@@ -2,13 +2,34 @@ const express = require("express");
 const axios = require("axios");
 const XLSX = require("xlsx");
 const path = require("path");
+const session = require("express-session");
 
 const app = express();
 const PORT = 6001;
 
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  session({
+    secret: "super_secret_key_123",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+
+const ADMIN_USER = "fsinta@hlgsolutions.net";
+const ADMIN_PASS = "HlgAdmin123!@#";
+
+function requireLogin(req, res, next) {
+  if (req.session.loggedIn) {
+    return next();
+  }
+  res.redirect("/login");
+}
+
 let statsData = [];
 
-const hcBase = "https://hcs.tldcrm.com/api/vendor/ping/27053/bc3e5083362ca17336ce23b73b7793c1";
+const hcBase =
+  "https://hcs.tldcrm.com/api/vendor/ping/27053/bc3e5083362ca17336ce23b73b7793c1";
 const lmBase = "https://lm360.tldcrm.com/api/public/dialer/ready";
 
 const hcNumbers = [
@@ -37,6 +58,7 @@ const lmNumbers = [
   { state: "OK", phone: "15807402987" },
 ];
 
+// ============= API ROUTES =============
 app.get("/refresh", async (req, res) => {
   const type = req.query.type || "hc";
   const list = type === "lm" ? lmNumbers : hcNumbers;
@@ -45,7 +67,9 @@ app.get("/refresh", async (req, res) => {
   for (const entry of list) {
     try {
       if (type === "lm") {
-        const apiRes = await axios.get(`${lmBase}/${entry.phone}?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`);
+        const apiRes = await axios.get(
+          `${lmBase}/${entry.phone}?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
+        );
         results.push({
           state: entry.state,
           phone: entry.phone,
@@ -85,15 +109,36 @@ app.get("/download", (req, res) => {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Results");
 
-  const filename = type === "lm" ? "lm360_results.xlsx" : "healthconnect_results.xlsx";
+  const filename =
+    type === "lm" ? "lm360_results.xlsx" : "healthconnect_results.xlsx";
   const filePath = path.join(__dirname, filename);
 
   XLSX.writeFile(workbook, filePath);
   res.download(filePath);
 });
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
 
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    req.session.loggedIn = true;
+    return res.redirect("/admin");
+  }
+  res.send("<h3>Invalid credentials! <a href='/login'>Try again</a></h3>");
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy();
+  res.redirect("/login");
+});
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/admin", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
 });
 
 app.listen(PORT, () => console.log(`Server running http://localhost:${PORT}`));
