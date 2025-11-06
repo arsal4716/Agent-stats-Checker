@@ -69,6 +69,7 @@ app.get("/refresh", async (req, res) => {
         const apiRes = await axios.get(
           `${lmBase}/${entry.phone}?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
         );
+
         results.push({
           state: entry.state,
           phone: entry.phone,
@@ -78,12 +79,17 @@ app.get("/refresh", async (req, res) => {
           cause: apiRes.data.cause,
         });
       } else {
+        const apiRes = await axios.get(
           `${hcBase}${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
+        );
+
         results.push({
           state: entry.state,
           phone: entry.phone,
           ready: apiRes.data.ready,
           active: apiRes.data.active,
+          reason: apiRes.data.reason,
+          cause: apiRes.data.cause,
         });
       }
     } catch (err) {
@@ -101,7 +107,6 @@ app.get("/refresh", async (req, res) => {
   statsData = results;
   res.json(statsData);
 });
-
 app.get("/download", (req, res) => {
   const type = req.query.type || "hc";
   const worksheet = XLSX.utils.json_to_sheet(statsData);
