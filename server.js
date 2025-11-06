@@ -29,7 +29,7 @@ function requireLogin(req, res, next) {
 let statsData = [];
 
 const hcBase =
-  "https://hcs.tldcrm.com/api/vendor/ping/27053/bc3e5083362ca17336ce23b73b7793c1";
+  "https://hcs.tldcrm.com/api/public/dialer/ready/"; 
 const lmBase = "https://lm360.tldcrm.com/api/public/dialer/ready";
 
 const hcNumbers = [
@@ -58,7 +58,6 @@ const lmNumbers = [
   { state: "OK", phone: "15807400000" },
 ];
 
-// ============= API ROUTES =============
 app.get("/refresh", async (req, res) => {
   const type = req.query.type || "hc";
   const list = type === "lm" ? lmNumbers : hcNumbers;
@@ -79,7 +78,7 @@ app.get("/refresh", async (req, res) => {
           cause: apiRes.data.cause,
         });
       } else {
-        const apiRes = await axios.get(`${hcBase}/${entry.phone}`);
+          `${hcBase}${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
         results.push({
           state: entry.state,
           phone: entry.phone,
