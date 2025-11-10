@@ -105,13 +105,14 @@
     <table id="statsTable">
       <thead>
         <tr>
-          <th>System</th>
-          <th>State</th>
-          <th>Phone</th>
-          <th>Ready</th>
-          <th>Active</th>
-          <th>Reason</th>
-          <th>Cause</th>
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Ready</th>
+              <th>Active</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
         </tr>
       </thead>
       <tbody></tbody>
@@ -134,16 +135,12 @@
           tbody.innerHTML = "";
           data.forEach((row) => {
             tbody.innerHTML += `
-              <tr>
-                <td>${row.system}</td>
-                <td>${row.state}</td>
-                <td>${row.phone}</td>
-                <td>${row.ready}</td>
-                <td>${row.active}</td>
-                <td>${row.reason || ""}</td>
-                <td>${row.cause || ""}</td>
-              </tr>
-            `;
+    <tr>
+      <td>${row.state}</td>
+      <td>${row.ready}</td>
+      <td>${row.active}</td>
+    </tr>
+  `;
           });
         } catch (err) {
           alert("Error fetching data");

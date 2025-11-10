@@ -150,64 +150,42 @@ app.get("/publisher/refresh", async (req, res) => {
         const apiRes = await axios.get(
           `${hcBase}${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
         );
-        return {
-          system: "HC",
-          state: entry.state,
-          phone: entry.phone,
-          ready: apiRes.data.ready,
-          active: apiRes.data.active,
-          reason: apiRes.data.reason,
-          cause: apiRes.data.cause,
-        };
-      } catch (err) {
-        return {
-          system: "HC",
-          state: entry.state,
-          phone: entry.phone,
-          ready: "ERR",
-          active: "ERR",
-          reason: err.message,
-          cause: "ERR",
-        };
+        return { state: entry.state, ready: apiRes.data.ready, active: apiRes.data.active };
+      } catch {
+        return { state: entry.state, ready: 0, active: 0 };
       }
     });
 
-    // Map LM numbers to promises
     const lmPromises = lmNumbers.map(async (entry) => {
       try {
         const apiRes = await axios.get(
           `${lmBase}/${entry.phone}?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
         );
-        return {
-          system: "LM",
-          state: entry.state,
-          phone: entry.phone,
-          ready: apiRes.data.ready,
-          active: apiRes.data.active,
-          reason: apiRes.data.reason,
-          cause: apiRes.data.cause,
-        };
-      } catch (err) {
-        return {
-          system: "LM",
-          state: entry.state,
-          phone: entry.phone,
-          ready: "ERR",
-          active: "ERR",
-          reason: err.message,
-          cause: "ERR",
-        };
+        return { state: entry.state, ready: apiRes.data.ready, active: apiRes.data.active };
+      } catch {
+        return { state: entry.state, ready: 0, active: 0 };
       }
     });
 
-    publisherData = await Promise.all([...hcPromises, ...lmPromises]);
+    const allData = await Promise.all([...hcPromises, ...lmPromises]);
+
+    // Combine by state
+    const combined = {};
+    allData.forEach((entry) => {
+      if (!combined[entry.state]) combined[entry.state] = { state: entry.state, ready: 0, active: 0 };
+      combined[entry.state].ready += Number(entry.ready);
+      combined[entry.state].active += Number(entry.active);
+    });
+
+    publisherData = Object.values(combined).sort((a, b) => b.active - a.active);
 
     res.json(publisherData);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to fetch agent data" });
+    res.status(500).json({ error: "Failed to fetch combined agent data" });
   }
 });
+
 app.get("/publisher/download", (req, res) => {
   const worksheet = XLSX.utils.json_to_sheet(publisherData);
   const workbook = XLSX.utils.book_new();
