@@ -137,6 +137,88 @@ app.get("/logout", (req, res) => {
   req.session.destroy();
   res.redirect("/login");
 });
+let publisherData = [];
+
+app.get("/publisher", (req, res) => {
+  res.sendFile(path.join(__dirname, "publisher.html"));
+});
+
+app.get("/publisher/refresh", async (req, res) => {
+  try {
+    const hcPromises = hcNumbers.map(async (entry) => {
+      try {
+        const apiRes = await axios.get(
+          `${hcBase}${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
+        );
+        return {
+          system: "HC",
+          state: entry.state,
+          phone: entry.phone,
+          ready: apiRes.data.ready,
+          active: apiRes.data.active,
+          reason: apiRes.data.reason,
+          cause: apiRes.data.cause,
+        };
+      } catch (err) {
+        return {
+          system: "HC",
+          state: entry.state,
+          phone: entry.phone,
+          ready: "ERR",
+          active: "ERR",
+          reason: err.message,
+          cause: "ERR",
+        };
+      }
+    });
+
+    // Map LM numbers to promises
+    const lmPromises = lmNumbers.map(async (entry) => {
+      try {
+        const apiRes = await axios.get(
+          `${lmBase}/${entry.phone}?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
+        );
+        return {
+          system: "LM",
+          state: entry.state,
+          phone: entry.phone,
+          ready: apiRes.data.ready,
+          active: apiRes.data.active,
+          reason: apiRes.data.reason,
+          cause: apiRes.data.cause,
+        };
+      } catch (err) {
+        return {
+          system: "LM",
+          state: entry.state,
+          phone: entry.phone,
+          ready: "ERR",
+          active: "ERR",
+          reason: err.message,
+          cause: "ERR",
+        };
+      }
+    });
+
+    publisherData = await Promise.all([...hcPromises, ...lmPromises]);
+
+    res.json(publisherData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch agent data" });
+  }
+});
+app.get("/publisher/download", (req, res) => {
+  const worksheet = XLSX.utils.json_to_sheet(publisherData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Results");
+
+  const filename = "ACA_SCRUB_results.xlsx";
+  const filePath = path.join(__dirname, filename);
+  XLSX.writeFile(workbook, filePath);
+  res.download(filePath);
+});
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
