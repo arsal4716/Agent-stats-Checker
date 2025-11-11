@@ -102,17 +102,25 @@
       <p>Fetching latest stats...</p>
     </div>
 
+    <h3>State Breakdown</h3>
     <table id="statsTable">
       <thead>
         <tr>
-          <thead>
-            <tr>
-              <th>State</th>
-              <th>Ready</th>
-              <th>Active</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
+          <th>State</th>
+          <th>Ready</th>
+          <th>Active</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h3 style="margin-top: 30px">Overall Totals</h3>
+    <table id="totalTable">
+      <thead>
+        <tr>
+          <th>Source</th>
+          <th>Ready</th>
+          <th>Active</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -131,17 +139,24 @@
         try {
           const res = await fetch("/publisher/refresh");
           const data = await res.json();
+
           const tbody = document.querySelector("#statsTable tbody");
           tbody.innerHTML = "";
-          data.forEach((row) => {
+          data.stateData.forEach((row) => {
             tbody.innerHTML += `
-    <tr>
-      <td>${row.state}</td>
-      <td>${row.ready}</td>
-      <td>${row.active}</td>
-    </tr>
-  `;
+          <tr>
+            <td>${row.state}</td>
+            <td>${row.ready}</td>
+            <td>${row.active}</td>
+          </tr>`;
           });
+
+          const totalBody = document.querySelector("#totalTable tbody");
+          totalBody.innerHTML = `
+        <tr><td>HC</td><td>${data.totalCombined.hc.ready}</td><td>${data.totalCombined.hc.active}</td></tr>
+        <tr><td>LM</td><td>${data.totalCombined.lm.ready}</td><td>${data.totalCombined.lm.active}</td></tr>
+        <tr><td><b>Combined</b></td><td><b>${data.totalCombined.combined.ready}</b></td><td><b>${data.totalCombined.combined.active}</b></td></tr>
+      `;
         } catch (err) {
           alert("Error fetching data");
           console.error(err);
@@ -153,6 +168,7 @@
       function downloadFile() {
         window.location.href = "/publisher/download";
       }
+
       refreshData();
     </script>
   </body>

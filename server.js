@@ -145,6 +145,7 @@ app.get("/publisher", (req, res) => {
 
 app.get("/publisher/refresh", async (req, res) => {
   try {
+    // --- 1. Per-state data ---
     const hcPromises = hcNumbers.map(async (entry) => {
       try {
         const apiRes = await axios.get(
@@ -169,7 +170,6 @@ app.get("/publisher/refresh", async (req, res) => {
 
     const allData = await Promise.all([...hcPromises, ...lmPromises]);
 
-    // Combine by state
     const combined = {};
     allData.forEach((entry) => {
       if (!combined[entry.state]) combined[entry.state] = { state: entry.state, ready: 0, active: 0 };
@@ -177,9 +177,24 @@ app.get("/publisher/refresh", async (req, res) => {
       combined[entry.state].active += Number(entry.active);
     });
 
-    publisherData = Object.values(combined).sort((a, b) => b.active - a.active);
+    const stateData = Object.values(combined).sort((a, b) => b.active - a.active);
 
-    res.json(publisherData);
+    const [hcMain, lmMain] = await Promise.all([
+      axios.get(`${hcBase}14696610000?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`),
+      axios.get(`${lmBase}/2145556666?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`)
+    ]);
+
+    const totalCombined = {
+      hc: hcMain.data,
+      lm: lmMain.data,
+      combined: {
+        ready: Number(hcMain.data.ready || 0) + Number(lmMain.data.ready || 0),
+        active: Number(hcMain.data.active || 0) + Number(lmMain.data.active || 0),
+      }
+    };
+
+    res.json({ stateData, totalCombined });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch combined agent data" });
