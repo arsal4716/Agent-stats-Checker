@@ -153,8 +153,6 @@
 
           const totalBody = document.querySelector("#totalTable tbody");
           totalBody.innerHTML = `
-        <tr><td>HC</td><td>${data.totalCombined.hc.ready}</td><td>${data.totalCombined.hc.active}</td></tr>
-        <tr><td>LM</td><td>${data.totalCombined.lm.ready}</td><td>${data.totalCombined.lm.active}</td></tr>
         <tr><td><b>Combined</b></td><td><b>${data.totalCombined.combined.ready}</b></td><td><b>${data.totalCombined.combined.active}</b></td></tr>
       `;
         } catch (err) {
