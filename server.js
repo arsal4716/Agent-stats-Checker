@@ -102,44 +102,14 @@ const prosNumbers = [
 
 app.get("/refresh", async (req, res) => {
   const type = req.query.type || "hc";
-  let list =
-    type === "lm" ? lmNumbers : type === "pros" ? prosNumbers : hcNumbers;
+
+  let list = [];
+  if (type === "lm") list = lmNumbers;
+  else if (type === "pros") list = prosNumbers;
+  else list = hcNumbers;
 
   const results = [];
 
-  if (type === "pros") {
-    for (const entry of list) {
-      try {
-        const apiRes = await axios.get(
-          `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/${entry.phone}`
-        );
-
-        let ready = Number(apiRes.data.ready || 0);
-        if (ready === 0) continue;
-
-        results.push({
-          state: entry.state,
-          phone: entry.phone,
-          ready: ready,
-          active: ready,
-          reason: apiRes.data.reason || "",
-          cause: apiRes.data.cause || "",
-        });
-      } catch (err) {
-        results.push({
-          state: entry.state,
-          phone: entry.phone,
-          ready: "ERR",
-          active: "ERR",
-          reason: "ERR",
-          cause: "ERR",
-        });
-      }
-    }
-
-    statsData = results;
-    return res.json(results);
-  }
   for (const entry of list) {
     try {
       if (type === "lm") {
@@ -155,7 +125,24 @@ app.get("/refresh", async (req, res) => {
           reason: apiRes.data.reason,
           cause: apiRes.data.cause,
         });
+      } else if (type === "pros") {
+        const apiRes = await axios.get(
+          `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/${entry.phone}`
+        );
+
+        const r = Number(apiRes.data.ready || 0);
+        if (r === 0) continue;
+
+        results.push({
+          state: entry.state,
+          phone: entry.phone,
+          ready: r,
+          active: r,
+          reason: "",
+          cause: "",
+        });
       } else {
+        // HC
         const apiRes = await axios.get(
           `${hcBase}${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
         );
@@ -175,98 +162,14 @@ app.get("/refresh", async (req, res) => {
         phone: entry.phone,
         ready: "ERR",
         active: "ERR",
-        reason: type === "lm" ? "ERR" : undefined,
-        cause: type === "lm" ? "ERR" : undefined,
+        reason: type === "lm" ? "ERR" : "",
+        cause: type === "lm" ? "ERR" : "",
       });
     }
   }
 
   statsData = results;
   res.json(statsData);
-});
-
-let publisherData = [];
-
-app.get("/publisher", (req, res) => {
-  res.sendFile(path.join(__dirname, "publisher.html"));
-});
-
-app.get("/publisher/refresh", async (req, res) => {
-  try {
-    const hcPromises = hcNumbers.map(async (entry) => {
-      try {
-        const apiRes = await axios.get(
-          `${hcBase}${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
-        );
-        return {
-          state: entry.state,
-          ready: Number(apiRes.data.ready || 0),
-          active: Number(apiRes.data.active || 0),
-        };
-      } catch {
-        return { state: entry.state, ready: 0, active: 0 };
-      }
-    });
-    const lmPromises = lmNumbers.map(async (entry) => {
-      try {
-        const apiRes = await axios.get(
-          `${lmBase}/${entry.phone}?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
-        );
-        return {
-          state: entry.state,
-          ready: Number(apiRes.data.ready || 0),
-          active: Number(apiRes.data.active || 0),
-        };
-      } catch {
-        return { state: entry.state, ready: 0, active: 0 };
-      }
-    });
-    const prosPromises = prosNumbers.map(async (entry) => {
-      try {
-        const apiRes = await axios.get(
-          `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/${entry.phone}`
-        );
-
-        const ready = Number(apiRes.data.ready || 0);
-        if (ready === 0) return null;
-        return {
-          state: entry.state,
-          ready: ready,
-          active: ready,
-        };
-      } catch {
-        return null;
-      }
-    });
-
-    const allData = await Promise.all([
-      ...hcPromises,
-      ...lmPromises,
-      ...prosPromises,
-    ]);
-    const filtered = allData.filter((x) => x !== null);
-    const combined = {};
-    filtered.forEach((entry) => {
-      if (!combined[entry.state])
-        combined[entry.state] = { state: entry.state, ready: 0, active: 0 };
-
-      combined[entry.state].ready += Number(entry.ready);
-      combined[entry.state].active += Number(entry.active);
-    });
-
-    const stateData = Object.values(combined).sort(
-      (a, b) => b.active - a.active
-    );
-    const totalCombined = {
-      ready: stateData.reduce((sum, s) => sum + s.ready, 0),
-      active: stateData.reduce((sum, s) => sum + s.active, 0),
-    };
-
-    res.json({ stateData, totalCombined });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch combined agent data" });
-  }
 });
 
 app.get("/download", (req, res) => {
@@ -299,6 +202,126 @@ app.get("/logout", (req, res) => {
   req.session.destroy();
   res.redirect("/login");
 });
+let publisherData = [];
+
+app.get("/publisher", (req, res) => {
+  res.sendFile(path.join(__dirname, "publisher.html"));
+});
+
+app.get("/publisher/refresh", async (req, res) => {
+  try {
+    // ------------------- STATE BREAKDOWN (HC + LM + PROS) -------------------
+    const hcPromises = hcNumbers.map(async (entry) => {
+      try {
+        const apiRes = await axios.get(
+          `${hcBase}${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
+        );
+        return {
+          state: entry.state,
+          ready: Number(apiRes.data.ready || 0),
+          active: Number(apiRes.data.active || 0),
+        };
+      } catch {
+        return { state: entry.state, ready: 0, active: 0 };
+      }
+    });
+
+    const lmPromises = lmNumbers.map(async (entry) => {
+      try {
+        const apiRes = await axios.get(
+          `${lmBase}/${entry.phone}?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
+        );
+        return {
+          state: entry.state,
+          ready: Number(apiRes.data.ready || 0),
+          active: Number(apiRes.data.active || 0),
+        };
+      } catch {
+        return { state: entry.state, ready: 0, active: 0 };
+      }
+    });
+
+    const prosPromises = prosNumbers.map(async (entry) => {
+      try {
+        const apiRes = await axios.get(
+          `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/${entry.phone}`
+        );
+
+        const r = Number(apiRes.data.ready || 0);
+        if (r === 0) return null;
+
+        return {
+          state: entry.state,
+          ready: r,
+          active: r,
+        };
+      } catch {
+        return null;
+      }
+    });
+
+    const hcData = await Promise.all(hcPromises);
+    const lmData = await Promise.all(lmPromises);
+    const prosRaw = await Promise.all(prosPromises);
+
+    const prosData = prosRaw.filter((x) => x !== null);
+
+    // ------------------ MERGE FOR STATE BREAKDOWN ------------------
+    const combined = {};
+
+    [...hcData, ...lmData, ...prosData].forEach((row) => {
+      if (!combined[row.state])
+        combined[row.state] = { state: row.state, ready: 0, active: 0 };
+
+      combined[row.state].ready += row.ready;
+      combined[row.state].active += row.active;
+    });
+
+    const stateData = Object.values(combined).sort(
+      (a, b) => b.active - a.active
+    );
+
+    // ------------------- OVERALL TOTALS (MASTER API CALLS) -------------------
+    const [hcMain, lmMain, prosMain] = await Promise.all([
+      axios.get(
+        `${hcBase}14696610000?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
+      ),
+      axios.get(
+        `${lmBase}/2145556666?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
+      ),
+      axios.get(
+        `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/7136818000`
+      ),
+    ]);
+
+    const prosReady = Number(prosMain.data.ready || 0);
+
+    const totalCombined = {
+      hc: hcMain.data,
+      lm: lmMain.data,
+      pros: {
+        ready: prosReady === 0 ? 0 : prosReady,
+        active: prosReady === 0 ? 0 : prosReady,
+      },
+      combined: {
+        ready:
+          Number(hcMain.data.ready || 0) +
+          Number(lmMain.data.ready || 0) +
+          (prosReady === 0 ? 0 : prosReady),
+        active:
+          Number(hcMain.data.active || 0) +
+          Number(lmMain.data.active || 0) +
+          (prosReady === 0 ? 0 : prosReady),
+      },
+    };
+
+    res.json({ stateData, totalCombined });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch combined data" });
+  }
+});
+
 app.get("/publisher/download", (req, res) => {
   const worksheet = XLSX.utils.json_to_sheet(publisherData);
   const workbook = XLSX.utils.book_new();
