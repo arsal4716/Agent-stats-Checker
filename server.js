@@ -126,18 +126,19 @@ app.get("/refresh", async (req, res) => {
             };
           } else if (type === "pros") {
             const apiRes = await axios.get(
-              `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/${entry.phone}`
+              `https://pros.tldcrm.com/api/public/dialer/ready/${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
             );
-            console.log('apiRes',apiRes.data)
+
+            console.log("apiRes", apiRes.data);
             const r = Number(apiRes.data.ready || 0);
-            if (r === 0) return null; 
+            if (r === 0) return null;
             return {
               state: entry.state,
               phone: entry.phone,
-              ready: r,
-              active: r,
-              reason: "",
-              cause: "",
+              ready: apiRes.data.ready,
+              active: apiRes.data.active,
+              reason: apiRes.data.reason,
+              cause: apiRes.data.cause,
             };
           } else {
             const apiRes = await axios.get(
@@ -170,7 +171,6 @@ app.get("/refresh", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch data" });
   }
 });
-
 
 app.get("/download", (req, res) => {
   const type = req.query.type || "hc";
@@ -210,7 +210,6 @@ app.get("/publisher", (req, res) => {
 
 app.get("/publisher/refresh", async (req, res) => {
   try {
-    // ------------------- STATE BREAKDOWN (HC + LM + PROS) -------------------
     const hcPromises = hcNumbers.map(async (entry) => {
       try {
         const apiRes = await axios.get(
@@ -266,7 +265,6 @@ app.get("/publisher/refresh", async (req, res) => {
 
     const prosData = prosRaw.filter((x) => x !== null);
 
-    // ------------------ MERGE FOR STATE BREAKDOWN ------------------
     const combined = {};
 
     [...hcData, ...lmData, ...prosData].forEach((row) => {
@@ -281,7 +279,6 @@ app.get("/publisher/refresh", async (req, res) => {
       (a, b) => b.active - a.active
     );
 
-    // ------------------- OVERALL TOTALS (MASTER API CALLS) -------------------
     const [hcMain, lmMain, prosMain] = await Promise.all([
       axios.get(
         `${hcBase}14696610000?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
