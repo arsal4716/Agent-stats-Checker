@@ -166,6 +166,7 @@ app.get("/refresh", async (req, res) => {
       })
     );
     statsData = results.filter((r) => r !== null);
+    statsData.sort((a, b) => Number(b.active) - Number(a.active));
     res.json(statsData);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch data" });
