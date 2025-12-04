@@ -44,6 +44,7 @@ const hcNumbers = [
   { state: "LA", phone: "13186080000" },
   { state: "TN", phone: "16153880000" },
   { state: "OK", phone: "15806700000" },
+  { state: "FL", phone: "13054950000" },
 ];
 
 const lmNumbers = [
@@ -131,12 +132,11 @@ app.get("/refresh", async (req, res) => {
 
             console.log("apiRes", apiRes.data);
             const r = Number(apiRes.data.ready || 0);
-            if (r === 0) return null;
             return {
               state: entry.state,
               phone: entry.phone,
-              ready: apiRes.data.ready,
-              active: apiRes.data.active,
+              ready: r,
+              active: Number(apiRes.data.active || 0),
               reason: apiRes.data.reason,
               cause: apiRes.data.cause,
             };
