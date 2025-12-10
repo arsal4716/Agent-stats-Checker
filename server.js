@@ -244,7 +244,7 @@ app.get("/publisher/refresh", async (req, res) => {
     const prosPromises = prosNumbers.map(async (entry) => {
       try {
         const apiRes = await axios.get(
-          `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/${entry.phone}`
+          `https://pros.tldcrm.com/api/public/dialer/ready/${entry.phone}?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
         );
 
         const r = Number(apiRes.data.ready || 0);
@@ -288,7 +288,7 @@ app.get("/publisher/refresh", async (req, res) => {
         `${lmBase}/2145556666?ava=1&ing=SRI_&sta=true&adg=true&cnt=true&act=true&rsn=true`
       ),
       axios.get(
-        `https://pros.tldcrm.com/api/vendor/ping/31769/ba6cffba7c40fef6eb56846046452913/7136818000`
+        `https://pros.tldcrm.com/api/public/dialer/ready/7136818000?ava=1&sta=true&adg=true&cnt=true&act=true&rsn=true&ing=SRI_`
       ),
     ]);
 
